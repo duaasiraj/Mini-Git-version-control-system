@@ -11,4 +11,6 @@ add_executable(minigit
         src/Logviewer.cpp
         src/Repository.cpp
         src/Restore.cpp
+        src/CommitNode.cpp
+        src/CommitNode.cpp
 )

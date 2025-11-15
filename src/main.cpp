@@ -5,7 +5,7 @@ using namespace std;
 int main() {
 
     cout<<generateCommitID()<<endl;
-    cout<<generateCommitID("this is a test")<<endl;
+    cout<<generateCommitID()<<endl;
 
 return 0;
 
