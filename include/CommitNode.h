@@ -1,5 +1,7 @@
 #ifndef COMMITNODE_H
 #define COMMITNODE_H
+#include <string>
+using namespace std;
 
 class CommitNode {
 
@@ -14,7 +16,8 @@ private:
 public:
 
     CommitNode();
-    CommitNode(string cI, string cM = "(No message)");
+    CommitNode(string cI, string cM);
+    CommitNode(string cI);
 
     void createCommitData();
     void revertCommitData(string id);

@@ -23,6 +23,13 @@ CommitNode::CommitNode(string cI, string cM) {
 
 }
 
+CommitNode::CommitNode(string cI) {
+
+    commitID = cI;
+    nextNode = NULL;
+
+}
+
 /*
 commits follow the following structure
 
@@ -64,10 +71,22 @@ void CommitNode::createCommitData() {
         infoFile<<"1. COMMIT ID: " + commitID + "\n2. COMMIT MESSAGE: " + commitMsg + "\n3. DATE & TIME OF COMMIT: " + ts + "\n";
 
         infoFile.close();
-        filesystem::path stagingAreaPath = filesystem::current_path()/".Minivcs"/"staging_area";
-        filesystem::path newDataPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"Data";
 
-        filesystem::copy(stagingAreaPath, newDataPath, filesystem::copy_options::recursive | filesystem::copy_options::update_existing);
+        filesystem::path dataPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"Data";
+        filesystem::path staging = filesystem::current_path()/".Minivcs"/"staging_area";
+
+        //------------------------------------------------------------------------
+        for (auto &entry : filesystem::recursive_directory_iterator(staging)) {
+            auto relative = filesystem::relative(entry.path(), staging);
+            auto dest = dataPath / relative;
+
+            if (filesystem::is_directory(entry)) {
+                filesystem::create_directories(dest);
+            } else {
+                filesystem::copy_file(entry, dest, filesystem::copy_options::overwrite_existing);
+            }
+        }
+        //------------------------------------------------------------------------
     }catch (filesystem::filesystem_error& e) {
         cerr<<"Error occured while creating directory: "<<e.what()<<endl;
         throw;
@@ -90,10 +109,25 @@ void CommitNode::revertCommitData(string id) {
         string ts = ctime(&timestamp);
         file<<"1. COMMIT ID: " + commitID + "\n2. COMMIT MESSAGE: " + commitMsg + "\n3. DATE & TIME OF COMMIT: " + ts + "\n";
 
-        filesystem::path OldPath = filesystem::current_path()/".Minivcs"/id/"Data";
-        filesystem::path newDataPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"Data";
+        filesystem::path OldPath = filesystem::current_path()/".Minivcs"/"commits"/id/"Data";
 
-        filesystem::copy(OldPath, newDataPath, filesystem::copy_options::recursive);
+        if (!filesystem::exists(OldPath)) {
+            throw runtime_error("Old directory doesn't exist");
+        }
+
+        filesystem::path newDataPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"Data";
+//--------------------------------------------------------------------------------------
+        for (auto &entry : filesystem::recursive_directory_iterator(OldPath)) {
+            auto relative = filesystem::relative(entry.path(), OldPath);
+            auto dest = newDataPath / relative;
+
+            if (filesystem::is_directory(entry)) {
+                filesystem::create_directories(dest);
+            } else {
+                filesystem::copy_file(entry, dest, filesystem::copy_options::overwrite_existing);
+            }
+
+        }//--------------------------------------------------------------------------------------
     }catch (filesystem::filesystem_error& e) {
         cerr<<"Something went wrong while creating the directory: "<<e.what()<<endl;
     }
@@ -118,6 +152,8 @@ void CommitNode::loadNodeInfo() {
         }
         else if (line.find("2. COMMIT MESSAGE: ") == 0) {
             commitMsg = line.substr(strlen("2. COMMIT MESSAGE: "));
+        }else {
+            continue;
         }
     }
 }
