@@ -1,7 +1,7 @@
 #ifndef COMMITNODE_H
 #define COMMITNODE_H
 
-class commitNode {
+class CommitNode {
 
 private:
 
@@ -9,29 +9,29 @@ private:
     string commitMsg;
     string nextCommitID;
 
-    commitNode* nextNode;
+    CommitNode* nextNode;
 
 public:
 
-    commitNode();
-    commitNode(string cI, string cM = "(No message)");
+    CommitNode();
+    CommitNode(string cI, string cM = "(No message)");
 
-    void createCommitNode();
-    void revertCommitNode(string id);
-    void getNodeInfo();
-    string checkNextCommit();
+    void createCommitData();
+    void revertCommitData(string id);
+    void loadNodeInfo();
+    string loadNextCommitID();
 
     void setCommitID(string i);
     void setCommitMsg(string m);
     void setNextID(string n);
-    void setNextNode(commitNode* n);
+    void setNextNode(CommitNode* n);
 
     string getCommitID();
     string getCommitMsg();
     string getNextID();
-    commitNode* getNextNode();
+    CommitNode* getNextNode();
 
-    void writeNextID(string id);
+    void saveNextID(string id);
 };
 
 #endif
