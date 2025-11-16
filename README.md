@@ -59,7 +59,7 @@ This project emphasizes the **application of DSA concepts** rather than library-
 ## ⚙️ Build & Run
 
 ### TO COMPILE MANUALLY
-###run the following command inside the program's directory
+**run the following command inside the program's directory**
 ```bash
 g++ -std=gnu++17 ^
 src/main.cpp ^
@@ -73,7 +73,7 @@ src/CommitNode.cpp ^
 -o minigit.exe
 
 ```
-###then run the exe wherever you want by referring to the exe's location
+**then run the exe wherever you want by referring to the exe's location**
 
 ```
 C:\Users\User\Desktop>"LocationOfexe\minigit.exe"
