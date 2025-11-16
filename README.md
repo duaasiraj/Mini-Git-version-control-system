@@ -58,6 +58,26 @@ This project emphasizes the **application of DSA concepts** rather than library-
 
 ## ⚙️ Build & Run
 
+### TO COMPILE MANUALLY
+###run the following command inside the program's directory
+```bash
+g++ -std=gnu++17 ^
+src/main.cpp ^
+src/CommitManager.cpp ^
+src/HashingHelper.cpp ^
+src/Logviewer.cpp ^
+src/Repository.cpp ^
+src/Restore.cpp ^
+src/CommitNode.cpp ^
+-I include ^
+-o minigit.exe
+
+```
+###then run the exe wherever you want by referring to the exe's location
+
+```
+C:\Users\User\Desktop>"LocationOfexe\minigit.exe"
+```
 ### **To build the project**
 ```bash
 mingw32-make
