@@ -10,8 +10,10 @@ private:
     string commitID;
     string commitMsg;
     string nextCommitID;
+    string prevCommitID;
 
     CommitNode* nextNode;
+    CommitNode* prevNode;
 
 public:
 
@@ -22,7 +24,6 @@ public:
     void createCommitData();
     void revertCommitData(string id);
     void loadNodeInfo();
-    string loadNextCommitID();
 
     void setCommitID(string i);
     void setCommitMsg(string m);
@@ -33,6 +34,18 @@ public:
     string getCommitMsg();
     string getNextID();
     CommitNode* getNextNode();
+
+
+
+
+    void setPrevNode(CommitNode* p);
+    CommitNode* getPrevNode();
+
+    void setPrevID(string p);
+    string getPrevID();
+
+    void savePrevID(string id);
+
 
     void saveNextID(string id);
 };

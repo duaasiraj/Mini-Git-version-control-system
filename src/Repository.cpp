@@ -64,6 +64,7 @@ void Repository::add(const vector<string>& files) {
     int failCount = 0;
 
     for (const auto& file : files) {
+
         try {
             addSingleFile(file);
             cout << GRN << "add '" << file << "'" << END << endl;
@@ -138,6 +139,13 @@ void Repository::addAll() {
 }
 
 void Repository::copyRecursive(const fs::path& src, const fs::path& dest) {
+
+    for (auto &part : src) {
+        if (part == ".Minivcs" || part == ".git") {
+            return;  // do not enter this directory
+        }
+    }
+
     if (fs::is_directory(src)) {
         fs::create_directories(dest);
 
