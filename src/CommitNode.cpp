@@ -10,6 +10,9 @@ using namespace std;
 CommitNode::CommitNode() {
 
     this->nextNode = NULL;
+    prevNode = NULL;
+    nextCommitID = "NA";
+    prevCommitID = "NA";
 
 }
 
@@ -18,6 +21,8 @@ CommitNode::CommitNode(string cI, string cM) {
     commitID = cI;
     commitMsg = cM;
     nextNode = NULL;
+    prevNode = NULL;
+
 
     createCommitData();
 
@@ -27,6 +32,9 @@ CommitNode::CommitNode(string cI) {
 
     commitID = cI;
     nextNode = NULL;
+    prevNode = NULL;
+
+    loadNodeInfo();
 
 }
 
@@ -37,11 +45,13 @@ CUrrent Directory
 |-> .Minivcs
 |   |
 |   |->commits (where all commits are stored)
-|   |    |
+|   |    |-> HEAD.txt  => holds ID of head commit (latest commit)
+|   |    |-> TAIL.txt  => holds ID of tail commit (first commit)
 |   |    |-> <Commit ID> (folders created for each commit)
 |   |    |      |
 |   |    |      |->info.txt  => holds commit ID, commit Message, timestamp
 |   |    |      |->NextCommit.txt   => holds the next commit's ID
+|   |    |      |->PrevCommit.txt   => holds the next commit's ID
 |   |    |      |->Data    => this is where all the files will get stored from the staging area after calling ("commit")
 |   |
 |   |->staging area (where files get added upon "add" command)
@@ -87,6 +97,21 @@ void CommitNode::createCommitData() {
             }
         }
         //------------------------------------------------------------------------
+
+        // create NextCommit.txt and PrevCommit.txt with "NA"
+        filesystem::path nextPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"NextCommit.txt";
+        filesystem::path prevPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"PrevCommit.txt";
+        {
+            ofstream n(nextPath.string());
+            n << "NA";
+        }
+        {
+            ofstream p(prevPath.string());
+            p << "NA";
+        }
+        nextCommitID = "NA";
+        prevCommitID = "NA";
+
     }catch (filesystem::filesystem_error& e) {
         cerr<<"Error occured while creating directory: "<<e.what()<<endl;
         throw;
@@ -156,23 +181,27 @@ void CommitNode::loadNodeInfo() {
             continue;
         }
     }
-}
 
-string CommitNode::loadNextCommitID() {
-
-    filesystem::path path = filesystem::current_path()/".Minivcs"/"commits"/commitID/"NextCommit.txt";
-
-    if (filesystem::exists(path)) {
-
-        ifstream file(path);
-        getline(file, nextCommitID);
-        file.close();
-        return nextCommitID;
+    filesystem::path nextPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"NextCommit.txt";
+    if (filesystem::exists(nextPath)) {
+        ifstream f(nextPath);
+        getline(f, nextCommitID);
+    } else {
+        nextCommitID = "NA";
     }
-    nextCommitID = "NA";
-    return nextCommitID;
 
+    filesystem::path prevPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"PrevCommit.txt";
+    if (filesystem::exists(prevPath)) {
+        ifstream f(prevPath);
+        getline(f, prevCommitID);
+    } else {
+        prevCommitID = "NA";
+    }
 }
+
+
+
+
 
 void CommitNode::setCommitID(string i) {
 
@@ -195,6 +224,17 @@ void CommitNode::setNextNode(CommitNode*n) {
     nextNode = n;
 }
 
+void CommitNode::setPrevID(string n) {
+
+    prevCommitID = n;
+
+}
+
+void CommitNode::setPrevNode(CommitNode*n) {
+
+    prevNode = n;
+}
+
 string CommitNode::getCommitID() {
     return commitID;
 }
@@ -211,10 +251,36 @@ CommitNode* CommitNode::getNextNode() {
     return nextNode;
 }
 
+string CommitNode::getPrevID() {
+    return prevCommitID;
+}
+
+CommitNode* CommitNode::getPrevNode() {
+    return prevNode;
+}
+
+
+
+
 void CommitNode::saveNextID(string id) {
 
 
     filesystem::path path = filesystem::current_path()/".Minivcs"/"commits"/commitID/"NextCommit.txt";
+
+    ofstream file(path.string());
+    if (!file) {
+        throw runtime_error("Could not save id to prevcommit.txt");
+    }
+
+    file<<id;
+    file.close();
+
+}
+
+void CommitNode::savePrevID(string id) {
+
+
+    filesystem::path path = filesystem::current_path()/".Minivcs"/"commits"/commitID/"PrevCommit.txt";
 
     ofstream file(path.string());
     if (!file) {
