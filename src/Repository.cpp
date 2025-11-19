@@ -9,7 +9,7 @@ Repository::Repository() {
     vcsRoot = fs::current_path() / ".Minivcs";
     stagingArea = vcsRoot / "staging_area";
     commitsDir = vcsRoot / "commits";
-    headFile = vcsRoot / "HEAD.txt";
+    headFile = commitsDir / "HEAD.txt";
 }
 
 void Repository::init() {

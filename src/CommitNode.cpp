@@ -85,7 +85,7 @@ void CommitNode::createCommitData() {
         filesystem::path dataPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"Data";
         filesystem::path staging = filesystem::current_path()/".Minivcs"/"staging_area";
 
-        //------------------------------------------------------------------------
+
         for (auto &entry : filesystem::recursive_directory_iterator(staging)) {
             auto relative = filesystem::relative(entry.path(), staging);
             auto dest = dataPath / relative;
@@ -96,19 +96,19 @@ void CommitNode::createCommitData() {
                 filesystem::copy_file(entry, dest, filesystem::copy_options::overwrite_existing);
             }
         }
-        //------------------------------------------------------------------------
 
         // create NextCommit.txt and PrevCommit.txt with "NA"
         filesystem::path nextPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"NextCommit.txt";
         filesystem::path prevPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"PrevCommit.txt";
-        {
+
             ofstream n(nextPath.string());
             n << "NA";
-        }
-        {
+
+
             ofstream p(prevPath.string());
             p << "NA";
-        }
+        n.close();
+        p.close();
         nextCommitID = "NA";
         prevCommitID = "NA";
 
@@ -141,7 +141,7 @@ void CommitNode::revertCommitData(string id) {
         }
 
         filesystem::path newDataPath = filesystem::current_path()/".Minivcs"/"commits"/commitID/"Data";
-//--------------------------------------------------------------------------------------
+
         for (auto &entry : filesystem::recursive_directory_iterator(OldPath)) {
             auto relative = filesystem::relative(entry.path(), OldPath);
             auto dest = newDataPath / relative;
@@ -152,7 +152,7 @@ void CommitNode::revertCommitData(string id) {
                 filesystem::copy_file(entry, dest, filesystem::copy_options::overwrite_existing);
             }
 
-        }//--------------------------------------------------------------------------------------
+        }
     }catch (filesystem::filesystem_error& e) {
         cerr<<"Something went wrong while creating the directory: "<<e.what()<<endl;
     }
