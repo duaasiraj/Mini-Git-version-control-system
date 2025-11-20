@@ -9,18 +9,22 @@ private:
     CommitNode* head;
     CommitNode* tail;
 
-    void loadListFromDisk();
-    CommitNode* loadSingleNode(const std::string& id);
+
 
 public:
     CommitManager();
 
-    void addCommit(const std::string& msg);
-    void revert(const std::string& commitID);
-    void printLog() const;
+    void loadListFromDisk();
+    CommitNode* loadSingleNode(const string& id);
 
-    CommitNode* getHead() const { return head; }
-    CommitNode* getTail() const { return tail; }
+    void addCommit(const string& msg);
+    void revert(const string& commitID);
+    void printLog();
+
+    CommitNode* getHead();
+    CommitNode* getTail();
+
+    ~CommitManager();
 };
 
 #endif
