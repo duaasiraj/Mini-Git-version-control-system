@@ -1,14 +1,16 @@
-#ifndef COMMITLIST_H
-#define COMMITLIST_H
+#ifndef COMMITMANAGER_H
+#define COMMITMANAGER_H
 
 #include "CommitNode.h"
 #include <string>
+
+#include "HashTable.h"
 
 class CommitManager {
 private:
     CommitNode* head;
     CommitNode* tail;
-
+    HashTable TableOfCommits;
 
 
 public:

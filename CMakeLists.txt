@@ -10,7 +10,7 @@ add_executable(minigit
         src/HashingHelper.cpp
         src/Logviewer.cpp
         src/Repository.cpp
-        src/Restore.cpp
         src/CommitNode.cpp
         src/CommitNode.cpp
+        src/HashTable.cpp
 )

@@ -40,9 +40,11 @@ static string readFile(const filesystem::path& path) {
 */
 //----------------------------------------------------------------------------------------------------------------------------
 
-CommitManager::CommitManager() {
+CommitManager::CommitManager() : TableOfCommits(100) {
     head = nullptr;
     tail = nullptr;
+
+
 
     filesystem::path VCSRepo = filesystem::current_path() / ".Minivcs" / "commits";
     if (!filesystem::exists(VCSRepo)) {
@@ -97,14 +99,24 @@ void CommitManager::loadListFromDisk() {
     head = loadSingleNode(headID);
     tail = loadSingleNode(tailID);
 
+    TableOfCommits.insert(tailID, tail);
+
     CommitNode* current = tail;
 
     while (current && current->getNextID() != "NA") {
         CommitNode* next = loadSingleNode(current->getNextID());
         current->setNextNode(next);
         next->setPrevNode(current);
+
+        TableOfCommits.insert(next->getCommitID(), next);
+
         current = next;
     }
+
+    cout<<"HASH TABLE CHECK. I MANAGED TO LOAD UP THE HASH TABLE!"<<endl;
+
+    TableOfCommits.displayAll();
+
 
     head = current;
 }
@@ -190,6 +202,8 @@ void CommitManager::addCommit(const string& msg) {
     newNode->savePrevID(head->getCommitID());
 
     head = newNode;
+
+
 
     ofstream Hfile(filesystem::current_path() / ".Minivcs" / "commits" / "HEAD.txt");
     Hfile << head->getCommitID();
