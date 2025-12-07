@@ -2055,7 +2055,7 @@ cout << s.size();  // Outputs: 3
 ### Overview
 Generates unique commit IDs using FNV-1a hashing algorithm combined with hardware randomness and high-precision timestamps.
 
-### Key Function
+### Key Functions
 
 #### `string generateCommitID(const string& data)`
 **Purpose**: Creates unique 16-character hexadecimal commit ID.
@@ -2074,75 +2074,787 @@ STEP 1: Generate hardware random number
         randomNumber = (upper32 << 32) XOR lower32
     
     Example: 0xA1B2C3D4E5F6G7H8
+    
+    Why left shift and XOR?
+    - random_device() typically returns 32-bit value
+    - Shift left by 32 bits: moves to upper half
+    - XOR with another call: fills lower half
+    - Result: full 64-bit random number
 
 STEP 2: Get high-precision timestamp
-    Use high_resolution_clock
-    Get time since epoch (Jan 1, 1970)
+    Use high_resolution_clock (most precise clock)
+    Get time since epoch (Jan 1, 1970 00:00:00 UTC)
     Extract count in nanoseconds
     
-    Example: 1702134622123456789
+    Example: 1702134622123456789 nanoseconds
+    
+    Why nanoseconds?
+    - Ensures temporal uniqueness
+    - Even rapid successive calls get different IDs
 
 STEP 3: Combine all data
     combinedData = data + to_string(randomNumber) + to_string(time)
     
-    Example: ""  + "11657...8912" + "1702...6789"
+    Example: 
+        data = ""
+        randomNumber = "11657298374598912"
+        time = "1702134622123456789"
+        combinedData = "116572983745989121702134622123456789"
 
 STEP 4: Apply FNV-1a hash
     hash = FNV1A(combinedData)
     
     Returns 64-bit unsigned integer
+    Example: 0x016a3f2b4c5d6e7f
 
 STEP 5: Format as hexadecimal
     Create stringstream
     Set format to hexadecimal
-    Set width to 16 characters
-    Set fill character to '0'
+    Set width to 16 characters (16 hex digits = 64 bits)
+    Set fill character to '0' (pad short values)
     Write hash to stream
     
-    Example: 016a3f2b4c5d6e7f
+    Example output: "016a3f2b4c5d6e7f"
+    
+    Why 16 characters?
+    - 16 hex digits = 16 * 4 bits = 64 bits
+    - setw(16) ensures consistent length
+    - setfill('0') pads: 0x1a3 → "000000000000001a3"
 
 STEP 6: Return formatted ID
-    Return stream as string
+    Convert stream to string and return
 ```
 
 **Dependencies**:
 - `FNV1A(string)` - Internal hash function
 
-**FNV-1a Hash Algorithm** (internal function):
-```
-static uint64_t FNV1A(const string& data):
-    STEP 1: Initialize constants
-        offset = 14695981039346656037ULL (FNV offset basis for 64-bit)
-        prime  = 1099511628211ULL       (FNV prime for 64-bit)
-    
-    STEP 2: Initialize hash
-        hash = offset
-    
-    STEP 3: Process each character
-        FOR i from 0 to data.length() - 1:
-            hash = hash XOR data[i]      // XOR with byte
-            hash = hash * prime           // Multiply by prime
-    
-    STEP 4: Return hash
-        Return hash
+**Libraries Used**:
+- `<random>`: Hardware random number generation
+- `<chrono>`: High-precision timestamps
+- `<sstream>`: String stream formatting
+- `<iomanip>`: Output manipulation (setw, setfill)
+- `<cstdint>`: Fixed-width integer types (uint64_t)
+
+**Example Execution**:
+```cpp
+string id1 = generateCommitID();
+// Internal process:
+// 1. randomNumber = 0xA1B2C3D4E5F6G7H8
+// 2. time = 1702134622123456789
+// 3. combinedData = "116572983745989121702134622123456789"
+// 4. hash = FNV1A(combinedData) = 0x016a3f2b4c5d6e7f
+// 5. formatted = "016a3f2b4c5d6e7f"
+// Returns: "016a3f2b4c5d6e7f"
+
+string id2 = generateCommitID("extra data");
+// Different hash due to additional input
+// Returns: "b2c3d4e5f6g7h8i9"
 ```
 
-**Output Format**: `016a3f2b4c5d6e7f` (16 hexadecimal digits = 8 bytes = 64 bits)
+---
 
-**Collision Resistance**: Extremely low probability due to:
-- 64-bit hardware randomness (2^64 possible values)
-- Nanosecond precision timestamp (unique at each moment)
-- Cryptographic-quality FNV-1a hash function
-- Combined probability ≈ 1 in 18 quintillion
+#### `static uint64_t FNV1A(const string& data)`
+**Purpose**: Internal hash function implementing FNV-1a algorithm.
+
+**Parameters**:
+- `data`: String to hash
+
+**Algorithm**:
+```
+STEP 1: Initialize FNV-1a constants
+    offset = 14695981039346656037ULL (FNV offset basis for 64-bit)
+    prime  = 1099511628211ULL       (FNV prime for 64-bit)
+    
+    Note: ULL suffix ensures 64-bit unsigned literals
+    These are standard FNV-1a values for 64-bit hashing
+
+STEP 2: Initialize hash with offset
+    generatedHash = offset
+
+STEP 3: Process each character
+    FOR i from 0 to data.length() - 1:
+        generatedHash = generatedHash XOR data[i]  // XOR with byte
+        generatedHash = generatedHash * prime       // Multiply by prime
+    
+    Why this order (XOR then multiply)?
+    - FNV-1a specification (vs FNV-1 which multiplies first)
+    - Better avalanche effect
+    - Small input changes create large output changes
+
+STEP 4: Return hash
+    Return generatedHash (64-bit unsigned integer)
+```
+
+**Example Execution**:
+```
+Input: "abc"
+
+Initial: hash = 14695981039346656037
+
+Iteration 1 (char 'a' = 97):
+    hash = 14695981039346656037 XOR 97
+    hash = 14695981039346656004
+    hash = 14695981039346656004 * 1099511628211
+    hash = 16148654816638736644
+
+Iteration 2 (char 'b' = 98):
+    hash = 16148654816638736644 XOR 98
+    hash = 16148654816638736614
+    hash = 16148654816638736614 * 1099511628211
+    hash = 17745013317699207154
+
+Iteration 3 (char 'c' = 99):
+    hash = 17745013317699207154 XOR 99
+    hash = 17745013317699207189
+    hash = 17745013317699207189 * 1099511628211
+    hash = 6849458870229054779
+
+Return: 6849458870229054779
+```
+
+**Why FNV-1a?**
+
+**Advantages**:
+1. **Fast**: Only XOR and multiply operations (no expensive modulo)
+2. **Simple**: Easy to implement and understand
+3. **Good distribution**: Produces well-distributed hash values
+4. **Avalanche effect**: Small input change = large output change
+5. **Non-cryptographic**: Perfect for hash tables (not security)
+
+**FNV-1a vs FNV-1**:
+```
+FNV-1:  hash = (hash * prime) XOR byte
+FNV-1a: hash = (hash XOR byte) * prime  ← Better distribution
+```
+
+**Properties**:
+- **Deterministic**: Same input always produces same output
+- **Fixed output**: Always 64 bits (8 bytes)
+- **Uniform distribution**: Spreads values evenly
+- **Low collision rate**: For reasonable input sizes
+
+**Collision Resistance**:
+
+Total uniqueness factors:
+1. **Hardware randomness**: 2^64 possible values
+2. **Nanosecond timestamp**: Unique per nanosecond
+3. **FNV-1a hash**: 2^64 possible outputs
+
+Combined probability of collision: ≈ 1 in 18,446,744,073,709,551,616
+
+**Practical Example**:
+```cpp
+// Same input always produces same hash
+uint64_t h1 = FNV1A("hello");  // 11831194018420276491
+uint64_t h2 = FNV1A("hello");  // 11831194018420276491 (same)
+
+// Different input produces different hash
+uint64_t h3 = FNV1A("hello!");  // 15902480990722088245 (different)
+```
+
+**Use in MiniVCS**:
+```cpp
+// generateCommitID combines randomness + time + FNV-1a
+string id = generateCommitID();
+
+// Process:
+// 1. Get random: 0xA1B2C3D4E5F6G7H8
+// 2. Get time:   1702134622123456789
+// 3. Combine:    "A1B2...1702134..."
+// 4. Hash:       FNV1A("A1B2...") → 0x016a3f2b4c5d6e7f
+// 5. Format:     "016a3f2b4c5d6e7f"
+```
+
+---
+
+## HashTable
+
+### Overview
+Implements a hash table with separate chaining for fast O(1) commit lookup by ID. Automatically resizes when load factor exceeds threshold to maintain performance.
+
+### Data Structures
+
+#### ChainNode (Internal Linked List Node)
+```cpp
+struct ChainNode {
+    string commitID;           // Key: commit ID
+    CommitNode* commitNodePtr; // Value: pointer to actual commit
+    ChainNode* next;           // Next node in chain
+    
+    ChainNode(const string& id, CommitNode* ptr)
+        : commitID(id), commitNodePtr(ptr), next(nullptr) {}
+};
+```
+
+**Purpose**: Each bucket in the hash table contains a linked list (chain) of ChainNodes to handle collisions.
+
+### Data Members
+
+| Member | Type | Description |
+|--------|------|-------------|
+| `table` | `ChainNode**` | Array of chain pointers (buckets) |
+| `tableSize` | `int` | Current capacity of hash table |
+| `numElements` | `int` | Number of commits stored |
+| `loadFactorThreshold` | `double` | Triggers resize (default: 0.75) |
+
+### Constructor/Destructor
+
+#### `HashTable(int initialSize = 50)`
+**Purpose**: Initializes hash table with specified capacity.
+
+**Parameters**:
+- `initialSize`: Initial number of buckets (default: 50)
+
+**Algorithm**:
+```
+STEP 1: Set parameters
+    tableSize = initialSize
+    numElements = 0
+    loadFactorThreshold = 0.75
+
+STEP 2: Allocate table array
+    table = new ChainNode*[tableSize]
+
+STEP 3: Initialize all buckets to nullptr
+    FOR i from 0 to tableSize - 1:
+        table[i] = nullptr
+```
+
+**Dependencies**: None (leaf function)
+
+**Memory Layout**:
+```
+table[0] → nullptr
+table[1] → nullptr
+table[2] → nullptr
+...
+table[49] → nullptr
+```
+
+---
+
+#### `~HashTable()`
+**Purpose**: Deallocates all memory used by hash table.
+
+**Algorithm**:
+```
+STEP 1: Delete all chains
+    FOR i from 0 to tableSize - 1:
+        current = table[i]
+        
+        WHILE current != nullptr:
+            temp = current
+            current = current->next
+            delete temp
+
+STEP 2: Delete table array
+    delete[] table
+```
+
+**Dependencies**: None (leaf function)
+
+**Memory Cleanup**:
+```
+Before:
+table[0] → [node1] → [node2] → nullptr
+table[1] → [node3] → nullptr
+table[2] → nullptr
+
+After:
+All nodes deleted, table array deleted
+```
+
+---
+
+### Core Methods
+
+#### `int hashFunction(const string& commitID) const`
+**Purpose**: Computes hash index for a commit ID using polynomial rolling hash.
+
+**Parameters**:
+- `commitID`: Commit ID string to hash
+
+**Algorithm**:
+```
+STEP 1: Handle empty string
+    IF commitID is empty:
+        Return 0
+
+STEP 2: Initialize hash
+    hash = 0
+    prime = 31  (chosen for good distribution)
+
+STEP 3: Polynomial rolling hash
+    FOR EACH character c in commitID:
+        hash = hash * prime + static_cast<unsigned long>(c)
+    
+    Example for "abc":
+        c = 'a' (97):  hash = 0 * 31 + 97 = 97
+        c = 'b' (98):  hash = 97 * 31 + 98 = 3105
+        c = 'c' (99):  hash = 3105 * 31 + 99 = 96354
+
+STEP 4: Map to table range
+    Return hash % tableSize
+    
+    Example: 96354 % 50 = 4
+```
+
+**Dependencies**: None (leaf function)
+
+**Why Polynomial Rolling Hash?**
+
+**Formula**: `hash = (hash * prime + char) % tableSize`
+
+**Advantages**:
+1. **Good distribution**: Prime multiplier spreads values evenly
+2. **Order matters**: "abc" ≠ "bca" (different hashes)
+3. **Fast**: Only multiplication and addition
+4. **All characters used**: Every char affects final hash
+
+**Why prime = 31?**
+- Small enough for fast computation
+- Large enough to reduce collisions
+- Odd number (avoids even-number patterns)
+- Traditional choice (used in Java String.hashCode())
 
 **Example**:
 ```cpp
-string id1 = generateCommitID();
-// Returns: "a1b2c3d4e5f6g7h8"
+hashFunction("016a3f2b4c5d6e7f");
 
-string id2 = generateCommitID("extra data");
-// Returns: "b2c3d4e5f6g7h8i9" (different due to extra data)
+Process each character:
+'0' (48):  hash = 0 * 31 + 48 = 48
+'1' (49):  hash = 48 * 31 + 49 = 1537
+'6' (54):  hash = 1537 * 31 + 54 = 47701
+...
+Final: hash % 50 = 27
+
+Returns: 27 (bucket index)
 ```
+
+---
+
+#### `void insert(const string& commitID, CommitNode* nodePtr)`
+**Purpose**: Inserts commit into hash table with automatic resizing.
+
+**Parameters**:
+- `commitID`: Unique commit identifier
+- `nodePtr`: Pointer to CommitNode in linked list
+
+**Algorithm**:
+```
+STEP 1: Validate inputs
+    IF commitID is empty OR nodePtr is nullptr:
+        Return (do nothing)
+
+STEP 2: Check load factor and resize if needed
+    IF getLoadFactor() >= loadFactorThreshold:
+        Call resize()
+
+STEP 3: Check for duplicates
+    IF exists(commitID):
+        Return (avoid duplicate entries)
+
+STEP 4: Insert into table
+    Call insertIntoTable(table, tableSize, commitID, nodePtr)
+    numElements++
+```
+
+**Dependencies**:
+- `getLoadFactor()` - Calculates current load factor
+- `resize()` - Doubles table size
+- `exists()` - Checks if commit already in table
+- `insertIntoTable()` - Helper for insertion
+
+**Visual Example**:
+```
+Before insert("c3", nodePtr):
+table[5] → [c1] → [c2] → nullptr
+numElements = 2
+
+After insert:
+table[5] → [c3] → [c1] → [c2] → nullptr
+numElements = 3
+
+(Inserted at head of chain for O(1))
+```
+
+**Time Complexity**: 
+- **Average**: O(1)
+- **Worst**: O(n) if resize needed
+- **Amortized**: O(1) over many operations
+
+---
+
+#### `void insertIntoTable(ChainNode** targetTable, int targetSize, const string& commitID, CommitNode* nodePtr)`
+**Purpose**: Helper function for inserting into a specific table (used by insert() and resize()).
+
+**Parameters**:
+- `targetTable`: Table to insert into
+- `targetSize`: Size of target table
+- `commitID`: Commit ID to insert
+- `nodePtr`: Pointer to CommitNode
+
+**Algorithm**:
+```
+STEP 1: Calculate hash for target table
+    hash = 0
+    prime = 31
+    
+    FOR EACH char c in commitID:
+        hash = hash * prime + c
+    
+    index = hash % targetSize
+
+STEP 2: Create new chain node
+    newNode = new ChainNode(commitID, nodePtr)
+
+STEP 3: Insert at head of chain (O(1))
+    newNode->next = targetTable[index]
+    targetTable[index] = newNode
+```
+
+**Dependencies**: None (leaf function)
+
+**Why Separate Function?**
+- Used by both `insert()` and `resize()`
+- Avoids code duplication
+- Can insert into different tables
+
+**Visual Example**:
+```
+Before:
+targetTable[5] → [c1] → [c2] → nullptr
+
+After insertIntoTable(targetTable, 50, "c3", ptr):
+targetTable[5] → [c3] → [c1] → [c2] → nullptr
+                  ↑
+             new node (inserted at head)
+```
+
+---
+
+#### `CommitNode* search(const string& commitID) const`
+**Purpose**: Searches for commit by ID and returns pointer to CommitNode.
+
+**Parameters**:
+- `commitID`: Commit ID to search for
+
+**Algorithm**:
+```
+STEP 1: Validate input
+    IF commitID is empty:
+        Return nullptr
+
+STEP 2: Calculate hash index
+    index = hashFunction(commitID)
+
+STEP 3: Get chain at index
+    current = table[index]
+
+STEP 4: Traverse chain
+    WHILE current != nullptr:
+        IF current->commitID == commitID:
+            Return current->commitNodePtr  (FOUND!)
+        
+        current = current->next
+
+STEP 5: Not found
+    Return nullptr
+```
+
+**Dependencies**:
+- `hashFunction()` - Computes bucket index
+
+**Visual Example**:
+```
+Search for "c2":
+
+1. hashFunction("c2") = 5
+
+2. table[5] → [c3] → [c1] → [c2] → nullptr
+                              ↑
+                           FOUND!
+
+3. Return pointer to c2's CommitNode
+```
+
+**Time Complexity**:
+- **Average**: O(1) - short chains
+- **Worst**: O(n) - all in one bucket
+- **Typical**: O(1 + α) where α = load factor
+
+---
+
+#### `bool exists(const string& commitID) const`
+**Purpose**: Checks if commit exists in hash table.
+
+**Parameters**:
+- `commitID`: Commit ID to check
+
+**Algorithm**:
+```
+Return (search(commitID) != nullptr)
+```
+
+**Dependencies**:
+- `search()` - Performs actual lookup
+
+**Example**:
+```cpp
+bool found = hashTable.exists("016a3f2b4c5d6e7f");
+// Returns: true if commit in table, false otherwise
+```
+
+**Time Complexity**: O(1) average
+
+---
+
+#### `bool remove(const string& commitID)`
+**Purpose**: Removes commit from hash table.
+
+**Parameters**:
+- `commitID`: Commit ID to remove
+
+**Algorithm**:
+```
+STEP 1: Validate input
+    IF commitID is empty:
+        Return false
+
+STEP 2: Calculate hash index
+    index = hashFunction(commitID)
+    current = table[index]
+    previous = nullptr
+
+STEP 3: Traverse chain to find node
+    WHILE current != nullptr:
+        IF current->commitID == commitID:
+            // Found the node!
+            
+            IF previous == nullptr:
+                // Node is at head of chain
+                table[index] = current->next
+            ELSE:
+                // Node is in middle or end
+                previous->next = current->next
+            
+            delete current
+            numElements--
+            Return true
+        
+        previous = current
+        current = current->next
+
+STEP 4: Not found
+    Return false
+```
+
+**Dependencies**:
+- `hashFunction()` - Computes bucket index
+
+**Visual Examples**:
+
+**Case 1: Remove head of chain**
+```
+Before remove("c3"):
+table[5] → [c3] → [c1] → [c2] → nullptr
+
+After:
+table[5] → [c1] → [c2] → nullptr
+```
+
+**Case 2: Remove middle of chain**
+```
+Before remove("c1"):
+table[5] → [c3] → [c1] → [c2] → nullptr
+
+After:
+table[5] → [c3] → [c2] → nullptr
+```
+
+**Time Complexity**: O(1) average
+
+---
+
+#### `void resize()`
+**Purpose**: Doubles table size and rehashes all elements when load factor exceeds threshold.
+
+**Algorithm**:
+```
+STEP 1: Create new larger table
+    newSize = tableSize * 2
+    newTable = new ChainNode*[newSize]
+    
+    FOR i from 0 to newSize - 1:
+        newTable[i] = nullptr
+
+STEP 2: Rehash all elements from old table
+    FOR i from 0 to tableSize - 1:
+        current = table[i]
+        
+        WHILE current != nullptr:
+            next = current->next
+            
+            // Calculate new hash for new table size
+            hash = 0
+            prime = 31
+            FOR EACH char c in current->commitID:
+                hash = hash * prime + c
+            newIndex = hash % newSize
+            
+            // Insert into new table
+            current->next = newTable[newIndex]
+            newTable[newIndex] = current
+            
+            current = next
+
+STEP 3: Delete old table array
+    delete[] table
+    (Note: Don't delete chain nodes, they're in new table)
+
+STEP 4: Update table pointer and size
+    table = newTable
+    tableSize = newSize
+```
+
+**Dependencies**: None (leaf function)
+
+**Why Resize?**
+
+**Problem**: As load factor increases, chains get longer:
+```
+Load Factor = 0.5:  Average chain length ≈ 0.5
+Load Factor = 1.0:  Average chain length ≈ 1.0
+Load Factor = 2.0:  Average chain length ≈ 2.0  (SLOW!)
+```
+
+**Solution**: Resize when load factor reaches 0.75:
+```
+Before resize (size=50, elements=38, load=0.76):
+table[5] → [c1] → [c2] → [c3] → nullptr  (long chain)
+table[10] → [c4] → [c5] → nullptr
+...
+
+After resize (size=100, elements=38, load=0.38):
+table[15] → [c1] → nullptr  (shorter chains)
+table[27] → [c2] → nullptr
+table[33] → [c3] → nullptr
+table[42] → [c4] → nullptr
+...
+```
+
+**Visual Example**:
+```
+Old table (size=4):
+[0] → [c1] → [c5] → nullptr
+[1] → [c2] → nullptr
+[2] → [c3] → [c7] → nullptr
+[3] → [c4] → [c6] → [c8] → nullptr
+
+After resize (size=8):
+[0] → nullptr
+[1] → [c1] → nullptr
+[2] → [c2] → nullptr
+[3] → [c3] → nullptr
+[4] → [c4] → nullptr
+[5] → [c5] → nullptr
+[6] → [c6] → nullptr
+[7] → [c7] → [c8] → nullptr
+
+(Elements redistributed, chains shorter)
+```
+
+**Time Complexity**: O(n) where n = number of elements
+
+**Amortized Cost**: O(1) - resize happens infrequently
+
+---
+
+### Helper Methods
+
+#### `double getLoadFactor() const`
+**Purpose**: Calculates current load factor.
+
+**Algorithm**:
+```
+Return numElements / tableSize
+```
+
+**Dependencies**: None (leaf function)
+
+**Load Factor Interpretation**:
+```
+0.0 - 0.5:  Excellent (lots of empty space)
+0.5 - 0.75: Good (balanced)
+0.75 - 1.0: Acceptable (nearing resize)
+> 1.0:      Poor (long chains, slow lookups)
+```
+
+---
+
+#### `int size() const`
+**Purpose**: Returns number of commits in table.
+
+**Dependencies**: None (leaf function)
+
+---
+
+#### `int capacity() const`
+**Purpose**: Returns current table capacity (number of buckets).
+
+**Dependencies**: None (leaf function)
+
+---
+
+#### `void printStatistics() const`
+**Purpose**: Prints detailed hash table statistics for debugging.
+
+**Algorithm**:
+```
+STEP 1: Print basic stats
+    Print table size
+    Print number of elements
+    Print load factor
+
+STEP 2: Analyze chains
+    emptySlots = 0
+    maxChainLength = 0
+    totalChainLength = 0
+    
+    FOR i from 0 to tableSize - 1:
+        chainLength = 0
+        current = table[i]
+        
+        IF current == nullptr:
+            emptySlots++
+        ELSE:
+            Count nodes in chain
+            Update maxChainLength if needed
+            Add to totalChainLength
+
+STEP 3: Print chain statistics
+    Print empty slots
+    Print longest chain
+    Print average chain length (if elements exist)
+```
+
+**Dependencies**: None (leaf function)
+
+**Output Example**:
+```
+========================================
+Hash Table Statistics:
+========================================
+Table Size: 100
+Number of Elements: 45
+Load Factor: 0.45
+Empty Slots: 62
+Longest Chain: 3
+Average Chain Length: 1.18
+========================================
+```
+
+**Use Case**: Debugging hash function quality and table performance
 
 ---
 
@@ -3073,3 +3785,22 @@ MiniVCS demonstrates effective use of fundamental data structures to solve real-
 4. **Immutable History**: Commits never change once created
 5. **Two-Level Architecture**: Storage (linked list) + Navigation (stacks)
 
+### Trade-offs
+
+**Advantages**:
+- Simple, understandable implementation
+- Fast operations (mostly O(1) or O(n))
+- Clear mental model for users
+- Reliable state persistence
+
+**Disadvantages**:
+- High disk usage (full snapshots)
+- No branching support
+- Forward-only traversal in linked list
+- Not suitable for large-scale projects
+
+This implementation is ideal for:
+- Educational purposes (learning data structures)
+- Small projects (< 1000 files)
+- Understanding version control concepts
+- Prototyping VCS features
