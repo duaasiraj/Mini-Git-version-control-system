@@ -1,6 +1,5 @@
 #include "HashTable.h"
 #include <iostream>
-#include <iomanip>
 
 using namespace std;
 
@@ -258,47 +257,3 @@ int HashTable::capacity() const {
     return tableSize;
 }
 
-//----------------------------------------------------------------------------------------------------------------------------
-// PRINT STATISTICS
-// Prints hash table statistics for debugging purposes
-//----------------------------------------------------------------------------------------------------------------------------
-
-void HashTable::printStatistics() const {
-    cout << "========================================" << endl;
-    cout << "Hash Table Statistics:" << endl;
-    cout << "========================================" << endl;
-    cout << "Table Size: " << tableSize << endl;
-    cout << "Number of Elements: " << numElements << endl;
-    cout << "Load Factor: " << fixed << setprecision(2) << getLoadFactor() << endl;
-
-    // Count chains and find longest chain
-    int emptySlots = 0;
-    int maxChainLength = 0;
-    int totalChainLength = 0;
-
-    for (int i = 0; i < tableSize; i++) {
-        int chainLength = 0;
-        ChainNode* current = table[i];
-
-        if (current == nullptr) {
-            emptySlots++;
-        } else {
-            while (current != nullptr) {
-                chainLength++;
-                current = current->next;
-            }
-            totalChainLength += chainLength;
-            if (chainLength > maxChainLength) {
-                maxChainLength = chainLength;
-            }
-        }
-    }
-
-    cout << "Empty Slots: " << emptySlots << endl;
-    cout << "Longest Chain: " << maxChainLength << endl;
-    if (numElements > 0) {
-        cout << "Average Chain Length: " << fixed << setprecision(2)
-             << (static_cast<double>(totalChainLength) / (tableSize - emptySlots)) << endl;
-    }
-    cout << "========================================" << endl;
-}
