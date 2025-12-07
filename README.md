@@ -61,7 +61,7 @@ This project emphasizes the **application of DSA concepts** rather than library-
 ### TO COMPILE MANUALLY
 **run the following command inside the program's directory**
 ```bash
-g++ -std=gnu++17 src/main.cpp src/CommitManager.cpp src/HashingHelper.cpp src/Logviewer.cpp src/Repository.cpp src/HashTable.cpp src/CommitNode.cpp -I include -o minigit.exe
+g++ -std=gnu++17 src/main.cpp src/CommitManager.cpp src/HashingHelper.cpp src/Logviewer.cpp src/Repository.cpp src/Restore.cpp src/CommitNode.cpp src/HashTable.cpp -I include -o minigit.exe
 
 ```
 **then run the exe wherever you want by referring to the exe's location**

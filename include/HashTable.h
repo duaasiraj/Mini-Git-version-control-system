@@ -1,72 +1,70 @@
-#ifndef HASHTABLE_H
-#define HASHTABLE_H
+#ifndef MINIGIT_HASHTABLE_H
+#define MINIGIT_HASHTABLE_H
 
-#include "CommitNode.h"
 #include <string>
-#include <vector>
+#include "CommitNode.h"
 
 using namespace std;
 
-struct HashEntry {
+// Chain node for handling collisions
+struct ChainNode {
     string commitID;
-    CommitNode* node;
-    HashEntry* next;
+    CommitNode* commitNodePtr;
+    ChainNode* next;
 
-    HashEntry(const string& id, CommitNode* n){
-        commitID = id;
-        node = n;
-        next = nullptr;
-    }
+    ChainNode(const string& id, CommitNode* ptr)
+        : commitID(id), commitNodePtr(ptr), next(nullptr) {}
 };
 
 class HashTable {
+private:
+    ChainNode** table;      // Array of chain pointers
+    int tableSize;          // Current size of hash table
+    int numElements;        // Number of elements stored
+    double loadFactorThreshold; // Threshold for resizing (default 0.75)
 
-public:
-
-    vector<HashEntry*> table;
-    int capacity;
-    int numElements;
-
-    const double LOAD_FACTOR_THRESHOLD = 1.0;
-
-
-
+    // Hash function: uses all characters in commit ID
     int hashFunction(const string& commitID) const;
 
-    void rehash();
+    // Helper function to resize and rehash when load factor exceeds threshold
+    void resize();
 
-    void deleteChain(HashEntry* head);
+    // Helper to insert into a specific table (used during resize)
+    void insertIntoTable(ChainNode** targetTable, int targetSize,
+                         const string& commitID, CommitNode* nodePtr);
 
-    int getChainLength(HashEntry* head) const;
+public:
+    // Constructor: initializes hash table with default size of 50
+    HashTable(int initialSize = 50);
 
-    HashTable(int initialCapacity = 100);
-
+    // Destructor: cleans up all chains
     ~HashTable();
 
-    void insert(const string& commitID, CommitNode* node);
+    // Insert a commit node into the hash table
+    void insert(const string& commitID, CommitNode* nodePtr);
 
+    // Search for a commit by ID - O(1) average case
     CommitNode* search(const string& commitID) const;
 
+    // Check if a commit exists - O(1) average case
+    bool exists(const string& commitID) const;
+
+    // Remove a commit from hash table
     bool remove(const string& commitID);
 
-    bool contains(const string& commitID) const;
-
-    int size() const;
-
-    int getCapacity() const;
-
+    // Get current load factor
     double getLoadFactor() const;
 
-    int getMaxChainLength() const;
+    // Get number of elements
+    int size() const;
 
-    double getAvgChainLength() const;
+    // Get table size
+    int capacity() const;
 
-    void printStats() const;
-
-    void displayAll();
-
-    void clear();
+    // Print hash table statistics (for debugging)
+    void printStatistics() const;
 };
 
 
-#endif //HASHTABLE_H
+
+#endif //MINIGIT_HASHTABLE_H

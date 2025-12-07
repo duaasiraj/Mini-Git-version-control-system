@@ -261,7 +261,20 @@ void Repository::checkout(const string& commitID) {
     }
 
     try {
-        // Copy all files from commit's Data folder to working directory
+        // STEP 1: Remove all files in working directory (except .Minivcs)
+        for (const auto& entry : fs::directory_iterator(fs::current_path())) {
+            string filename = entry.path().filename().string();
+
+            // Skip .Minivcs directory
+            if (filename == ".Minivcs" || filename == ".git") {
+                continue;
+            }
+
+            // Remove everything else
+            fs::remove_all(entry);
+        }
+
+        // STEP 2: Copy all files from commit's Data folder to working directory
         for (const auto& entry : fs::recursive_directory_iterator(commitDataPath)) {
             fs::path relativePath = fs::relative(entry.path(), commitDataPath);
             fs::path destPath = fs::current_path() / relativePath;
@@ -274,13 +287,8 @@ void Repository::checkout(const string& commitID) {
                     fs::create_directories(destPath.parent_path());
                 }
 
-                // FIXED: Remove existing file first, then copy
-                // This solves the Windows "File exists" error
-                if (fs::exists(destPath)) {
-                    fs::remove(destPath);
-                }
-
-                fs::copy_file(entry, destPath);
+                // Copy the file
+                fs::copy_file(entry, destPath, fs::copy_options::overwrite_existing);
             }
         }
 
