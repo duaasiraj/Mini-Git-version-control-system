@@ -8,7 +8,6 @@ add_executable(minigit
         src/main.cpp
         src/CommitManager.cpp
         src/HashingHelper.cpp
-        src/Logviewer.cpp
         src/Repository.cpp
         src/Restore.cpp
         src/CommitNode.cpp

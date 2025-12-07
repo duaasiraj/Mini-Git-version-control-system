@@ -176,13 +176,13 @@ void Restore::printStatus() const {
 
     // Show actual stack contents for debugging
     if (undoStack.size() > 0) {
-        cout << "\nUndo Stack (bottom → top):\n";
+        cout << "\nUndo Stack (bottom -> top):\n";
         for (int i = 0; i < undoStack.size(); i++) {
             cout << "  [" << i << "] " << undoStack.data[i] << "\n";
         }
     }
     if (redoStack.size() > 0) {
-        cout << "\nRedo Stack (bottom → top):\n";
+        cout << "\nRedo Stack (bottom -> top):\n";
         for (int i = 0; i < redoStack.size(); i++) {
             cout << "  [" << i << "] " << redoStack.data[i] << "\n";
         }
@@ -199,7 +199,7 @@ void Restore::viewHistory(CommitNode* head) const {
 
     cout << "\n========== COMMIT HISTORY ==========\n";
     for (CommitNode* curr = head; curr; curr = curr->getPrevNode()) {
-        cout << (curr->getCommitID() == currentCommitID ? " → [CURRENT] " : "             ")
+        cout << (curr->getCommitID() == currentCommitID ? " -> [CURRENT] " : "             ")
              << "Commit: " << curr->getCommitID() << "\n";
     }
     cout << "====================================\n";
