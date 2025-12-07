@@ -44,6 +44,8 @@ CommitManager::CommitManager() {
     head = nullptr;
     tail = nullptr;
 
+    hashTable = new HashTable(50);
+
     filesystem::path VCSRepo = filesystem::current_path() / ".Minivcs" / "commits";
     if (!filesystem::exists(VCSRepo)) {
         return;
@@ -99,10 +101,19 @@ void CommitManager::loadListFromDisk() {
 
     CommitNode* current = tail;
 
+    if (tail != nullptr) {
+        hashTable->insert(tailID, tail);
+    }
+
     while (current && current->getNextID() != "NA") {
         CommitNode* next = loadSingleNode(current->getNextID());
         current->setNextNode(next);
         next->setPrevNode(current);
+
+        if (next != nullptr) {
+            hashTable->insert(next->getCommitID(), next);
+        }
+
         current = next;
     }
 
@@ -178,6 +189,9 @@ void CommitManager::addCommit(const string& msg) {
         ofstream f2(filesystem::current_path() / ".Minivcs" / "commits" / "TAIL.txt");
         f1 << id;
         f2 << id;
+
+        hashTable->insert(id, newNode);
+
         return;
     }
 
@@ -193,6 +207,8 @@ void CommitManager::addCommit(const string& msg) {
 
     ofstream Hfile(filesystem::current_path() / ".Minivcs" / "commits" / "HEAD.txt");
     Hfile << head->getCommitID();
+
+    hashTable->insert(id, newNode);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
@@ -249,6 +265,12 @@ We check that current_directory/.Minivcs/commits/<source commit ID> exists
 void CommitManager::revert(const string& commitID) {
 
     // ----------------------------------------- PART 1 -----------------------------------------
+    cout<<"checking if ID exists..."<<endl;
+    if (!commitExists(commitID)) {
+        cout << "Error: Commit '" << commitID << "' not found." << endl;
+        return;
+    }
+    cout<<"ID found..."<<endl;
 
     filesystem::path commitPath = filesystem::current_path() / ".Minivcs" / "commits" / commitID;
 
@@ -395,6 +417,12 @@ CommitManager::~CommitManager() {
 
     head = nullptr;
     tail = nullptr;
+
+    delete hashTable;
+}
+
+bool CommitManager::commitExists(const string& commitID) {
+    return hashTable->exists(commitID);
 }
 
 

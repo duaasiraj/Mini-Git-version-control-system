@@ -12,5 +12,5 @@ add_executable(minigit
         src/Repository.cpp
         src/Restore.cpp
         src/CommitNode.cpp
-        src/CommitNode.cpp
+        src/HashTable.cpp
 )

@@ -2,6 +2,7 @@
 #define COMMITLIST_H
 
 #include "CommitNode.h"
+#include "HashTable.h"
 #include <string>
 
 class CommitManager {
@@ -9,6 +10,7 @@ private:
     CommitNode* head;
     CommitNode* tail;
 
+    HashTable* hashTable;
 
 
 public:
@@ -23,6 +25,8 @@ public:
 
     CommitNode* getHead();
     CommitNode* getTail();
+
+    bool commitExists(const string& commitID);
 
     ~CommitManager();
 };
