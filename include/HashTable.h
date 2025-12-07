@@ -1,5 +1,5 @@
-#ifndef MINIGIT_HASHTABLE_H
-#define MINIGIT_HASHTABLE_H
+#ifndef HASHTABLE_H
+#define HASHTABLE_H
 
 #include <string>
 #include "CommitNode.h"
@@ -61,8 +61,6 @@ public:
     // Get table size
     int capacity() const;
 
-    // Print hash table statistics (for debugging)
-    void printStatistics() const;
 };
 
 
