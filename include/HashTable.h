@@ -11,8 +11,7 @@ struct ChainNode {
     CommitNode* commitNodePtr;
     ChainNode* next;
 
-    ChainNode(const string& id, CommitNode* ptr)
-        : commitID(id), commitNodePtr(ptr), next(nullptr) {}
+    ChainNode(const string& id, CommitNode* ptr): commitID(id), commitNodePtr(ptr), next(nullptr) {}
 };
 
 class HashTable {
