@@ -40,7 +40,8 @@ HashTable::~HashTable() {
 //----------------------------------------------------------------------------------------------------------------------------
 // HASH FUNCTION
 // Uses all characters in the commit ID to generate a hash
-// Uses polynomial rolling hash for better distribution
+// We use a prime number to allow for greater distribution and variety
+//we take the mod of the hash with the size of the table to ensure the index is always in bounds
 //----------------------------------------------------------------------------------------------------------------------------
 
 int HashTable::hashFunction(const string& commitID) const {
@@ -49,22 +50,21 @@ int HashTable::hashFunction(const string& commitID) const {
     }
 
     unsigned long hash = 0;
-    const unsigned long prime = 31; // Prime number for better distribution
+    const unsigned long prime = 31;
 
-    // Process each character in the commit ID
+
     for (char c : commitID) {
         hash = hash * prime + static_cast<unsigned long>(c);
     }
 
-    // Ensure the hash is within table bounds (positive and within range)
+
     return static_cast<int>(hash % tableSize);
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
 // INSERT
-// Inserts a commit node into the hash table
-// Automatically resizes if load factor exceeds threshold
-// Time Complexity: O(1) average case
+//first we validate the commit node we're inserting, then we check if we need to rehash. then we check if the id already exists in table
+//once all clear, we insert into the table
 //----------------------------------------------------------------------------------------------------------------------------
 
 void HashTable::insert(const string& commitID, CommitNode* nodePtr) {
@@ -72,40 +72,36 @@ void HashTable::insert(const string& commitID, CommitNode* nodePtr) {
         return;
     }
 
-    // Check if we need to resize
     if (getLoadFactor() >= loadFactorThreshold) {
         resize();
     }
 
-    // Check if commit already exists (avoid duplicates)
     if (exists(commitID)) {
         return;
     }
 
-    // Insert into the table
     insertIntoTable(table, tableSize, commitID, nodePtr);
     numElements++;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
 // INSERT INTO TABLE (HELPER)
-// Helper function used by both insert() and resize()
+// We made this helper function as we need to insert various times (during regular insertion and rehashing)
+//we tried doing direct insertion but there seemed to be some sort of ambiguity while inserting, so we decided to create a seperate function
 //----------------------------------------------------------------------------------------------------------------------------
 
-void HashTable::insertIntoTable(ChainNode** targetTable, int targetSize,
-                                 const string& commitID, CommitNode* nodePtr) {
-    // Calculate hash for target table
+void HashTable::insertIntoTable(ChainNode** targetTable, int targetSize, const string& commitID, CommitNode* nodePtr) {
+
     unsigned long hash = 0;
     const unsigned long prime = 31;
     for (char c : commitID) {
         hash = hash * prime + static_cast<unsigned long>(c);
     }
+
     int index = static_cast<int>(hash % targetSize);
 
-    // Create new chain node
     ChainNode* newNode = new ChainNode(commitID, nodePtr);
 
-    // Insert at the beginning of the chain (O(1))
     newNode->next = targetTable[index];
     targetTable[index] = newNode;
 }
@@ -114,7 +110,7 @@ void HashTable::insertIntoTable(ChainNode** targetTable, int targetSize,
 // SEARCH
 // Searches for a commit by ID and returns pointer to CommitNode
 // Returns nullptr if not found
-// Time Complexity: O(1) average case, O(n) worst case
+// (O(n) would occur if somehow we got a really long chain )
 //----------------------------------------------------------------------------------------------------------------------------
 
 CommitNode* HashTable::search(const string& commitID) const {
@@ -125,7 +121,6 @@ CommitNode* HashTable::search(const string& commitID) const {
     int index = hashFunction(commitID);
     ChainNode* current = table[index];
 
-    // Traverse the chain at this index
     while (current != nullptr) {
         if (current->commitID == commitID) {
             return current->commitNodePtr;
@@ -133,13 +128,12 @@ CommitNode* HashTable::search(const string& commitID) const {
         current = current->next;
     }
 
-    return nullptr; // Not found
+    return nullptr;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
 // EXISTS
 // Checks if a commit exists in the hash table
-// Time Complexity: O(1) average case
 //----------------------------------------------------------------------------------------------------------------------------
 
 bool HashTable::exists(const string& commitID) const {
@@ -149,8 +143,7 @@ bool HashTable::exists(const string& commitID) const {
 //----------------------------------------------------------------------------------------------------------------------------
 // REMOVE
 // Removes a commit from the hash table
-// Returns true if successfully removed, false if not found
-// Time Complexity: O(1) average case
+// we use the two pointer approach for deleting nodes in a given chain
 //----------------------------------------------------------------------------------------------------------------------------
 
 bool HashTable::remove(const string& commitID) {
@@ -160,61 +153,55 @@ bool HashTable::remove(const string& commitID) {
 
     int index = hashFunction(commitID);
     ChainNode* current = table[index];
-    ChainNode* previous = nullptr;
+    ChainNode* prev = nullptr;
 
-    // Traverse the chain to find the node
     while (current != nullptr) {
         if (current->commitID == commitID) {
-            // Found the node, remove it
-            if (previous == nullptr) {
-                // Node is at the head of the chain
+            if (prev == nullptr) {
                 table[index] = current->next;
             } else {
-                // Node is in the middle or end
-                previous->next = current->next;
+                prev->next = current->next;
             }
 
             delete current;
             numElements--;
             return true;
         }
-        previous = current;
+        prev = current;
         current = current->next;
     }
 
-    return false; // Not found
+    return false;
 }
 
 //----------------------------------------------------------------------------------------------------------------------------
 // RESIZE
 // Doubles the table size and rehashes all elements
-// Called automatically when load factor exceeds threshold
+// This function gets called whenever load factor is exceeded
 //----------------------------------------------------------------------------------------------------------------------------
 
 void HashTable::resize() {
+
     int newSize = tableSize * 2;
     ChainNode** newTable = new ChainNode*[newSize];
 
-    // Initialize new table
     for (int i = 0; i < newSize; i++) {
         newTable[i] = nullptr;
     }
 
-    // Rehash all elements from old table to new table
     for (int i = 0; i < tableSize; i++) {
         ChainNode* current = table[i];
         while (current != nullptr) {
             ChainNode* next = current->next;
 
-            // Calculate new hash for the new table size
             unsigned long hash = 0;
             const unsigned long prime = 31;
+
             for (char c : current->commitID) {
                 hash = hash * prime + static_cast<unsigned long>(c);
             }
             int newIndex = static_cast<int>(hash % newSize);
 
-            // Insert into new table
             current->next = newTable[newIndex];
             newTable[newIndex] = current;
 
@@ -222,10 +209,8 @@ void HashTable::resize() {
         }
     }
 
-    // Delete old table array (but not the chain nodes, they're in new table)
     delete[] table;
 
-    // Update table pointer and size
     table = newTable;
     tableSize = newSize;
 }
