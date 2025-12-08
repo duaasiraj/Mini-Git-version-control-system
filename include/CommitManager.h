@@ -1,5 +1,5 @@
-#ifndef COMMITLIST_H
-#define COMMITLIST_H
+#ifndef COMMITMANAGER_H
+#define COMMITMANAGER_H
 
 #include "CommitNode.h"
 #include "HashTable.h"
